@@ -7,15 +7,34 @@ using System.Threading;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
-
-//hallooooo venecia
-
 public class ArrowController : MonoBehaviour
 {
     private Ball ballScript;
-
     private MqttClient client;
     public static string message = "";
+    public static ArrowController Instance { get; private set; }
+
+    private float angle = 0;
+
+    public float Angle
+    {
+        get { return angle; }
+        set { angle = value; }
+    }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // Optional, if you want the instance to persist across scenes
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     void Start()
     {
         // Find the GameObject with the Ball script attached
@@ -40,9 +59,8 @@ public class ArrowController : MonoBehaviour
         // Handle received MQTT message
         message = Encoding.UTF8.GetString(e.Message);
         Debug.Log("Received MQTT message: " + message);
-
-        // Parse message and adjust arrow movement accordingly
-        // Add more conditions to handle other arrow movements as needed
+        // You can parse the MQTT message and adjust the angle if needed
+        // angle = float.Parse(message); // Example of parsing
     }
 
     void OnDestroy()
@@ -52,32 +70,25 @@ public class ArrowController : MonoBehaviour
         {
             client.Disconnect();
         }
+
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
+
     void Update()
     {
-        if (message == "a")
+        // Use the shared angle value
+        if (angle > 0)
         {
-            transform.Rotate(Vector3.down, 5.0f);
-            message = "";
+            transform.Rotate(Vector3.down, angle * 0.2f);
+            angle = 0;
         }
-        if (message == "d")
+        if (angle < 0)
         {
-            transform.Rotate(Vector3.up, 5.0f);
-            message = "";
-        }
-        if (message == "w")
-        {
-            float incrementAmount = 0.1f; // Adjust this value as needed
-            Vector3 newSize = transform.localScale + new Vector3(0, 0, incrementAmount);
-            transform.localScale = newSize;
-            message = "";
-        }
-
-        if (message == "s")
-        {
-            ballScript.StartCoroutine(ballScript.Shoot());
-            message = "";
-
+            transform.Rotate(Vector3.up, angle * -0.2f);
+            angle = 0;
         }
 
         if (Input.GetKey(KeyCode.LeftArrow))
@@ -94,8 +105,7 @@ public class ArrowController : MonoBehaviour
         {
             if (transform.localScale.z < 2)
             {
-                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y,
-                    transform.localScale.z + (1 * Time.deltaTime));
+                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, transform.localScale.z + 1 * Time.deltaTime);
             }
             else
             {
@@ -107,14 +117,12 @@ public class ArrowController : MonoBehaviour
         {
             if (transform.localScale.z > 0.1f)
             {
-                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y,
-                    transform.localScale.z - (1 * Time.deltaTime));
+                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, transform.localScale.z - 1 * Time.deltaTime);
             }
             else
             {
                 transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 0.1f);
-            }
-
         }
     }
+}
 }
