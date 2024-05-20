@@ -14,7 +14,7 @@ public class ArrowController : MonoBehaviour
     public static string message = "";
     public static ArrowController Instance { get; private set; }
 
-    private float angle = 0;
+    private float angle = -180;
 
     public float Angle
     {
@@ -79,16 +79,26 @@ public class ArrowController : MonoBehaviour
 
     void Update()
     {
-        // Use the shared angle value
-        if (angle > 0)
+
+        if ((angle > 0) & (angle <90))
         {
-            transform.Rotate(Vector3.down, angle * 0.2f);
-            angle = 0;
+            transform.Rotate(Vector3.down, angle * 0.4f);
+            angle = -180;
+            ballScript.StartCoroutine(ballScript.Shoot());
         }
-        if (angle < 0)
+
+        if ((angle < 0) & (angle > -90))
         {
-            transform.Rotate(Vector3.up, angle * -0.2f);
-            angle = 0;
+            transform.Rotate(Vector3.up, angle * -0.4f);
+            angle = -180;
+            ballScript.StartCoroutine(ballScript.Shoot());
+
+        }
+        if (angle == 0)
+        {
+            ballScript.StartCoroutine(ballScript.Shoot());
+            angle = -180;
+
         }
 
         if (Input.GetKey(KeyCode.LeftArrow))
@@ -99,8 +109,10 @@ public class ArrowController : MonoBehaviour
         if (Input.GetKey(KeyCode.RightArrow))
         {
             transform.Rotate(Vector3.up, Time.deltaTime * 30f);
+
         }
 
+       
         if (Input.GetKey(KeyCode.UpArrow))
         {
             if (transform.localScale.z < 2)

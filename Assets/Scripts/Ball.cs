@@ -54,6 +54,7 @@ public class Ball : MonoBehaviour
 
     private void ResetPosition()
     {
+    StopAllCoroutines();
     transform.position = _startPosition.position; // Reset position to the starting position
     transform.rotation = _startPosition.rotation; // Reset rotation to the starting rotation
     rb.velocity = Vector3.zero; // Reset velocity to zero
@@ -61,6 +62,7 @@ public class Ball : MonoBehaviour
     _arrow.gameObject.SetActive(true); // Activate the arrow again
     _ballMoving = false; // Set ballMoving flag to false
     }
+    
 
 
     void Update()
@@ -77,6 +79,8 @@ public class Ball : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
+            Debug.Log("R key pressed. Resetting position.");
+
             ResetPosition();
         }
 
@@ -132,7 +136,6 @@ public class Ball : MonoBehaviour
         int fallenPins = pinsDown - previousPinsDown;
         previousPinsDown = pinsDown;
 
-        // Use fallenPins value as you wish, e.g., updating the score.
     }
     
     private void GenerateFeedBack()
