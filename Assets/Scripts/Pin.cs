@@ -1,32 +1,36 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 public class Pin : MonoBehaviour
 {
-    private bool _done;
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+    private bool isKnockedOver;
 
-    private void OnCollisionEnter(Collision collision)
+    void Start()
     {
-        if ((collision.collider.CompareTag("Ball") || collision.collider.CompareTag("Pin")) && !_done)
+        originalPosition = transform.position;
+        originalRotation = transform.rotation;
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if ((collision.collider.CompareTag("Ball") || collision.collider.CompareTag("Pin")) && !isKnockedOver)
         {
-            // get the velocity of the pin after the collision
-            float velocity = GetComponent<Rigidbody>().velocity.magnitude;
-
-            // check if the velocity has dropped below the fall threshold
-            if (velocity < 10)
+            if (Vector3.Angle(transform.up, Vector3.up) > 60)
             {
-                var point = GameObject.FindGameObjectWithTag("Ball").GetComponent<Ball>().Point;
-                point += 1;
-                GameObject.FindGameObjectWithTag("Poing").GetComponent<TextMeshProUGUI>().text = $"Number of fallen pins: {point}";
-                GameObject.FindGameObjectWithTag("Ball").GetComponent<Ball>().Point = point;
-                _done = true;
+                isKnockedOver = true;
+                GameManager.Instance.UpdateScore(1);  // Update the score using the GameManager
+                GameManager.Instance.UpdateFeedback("Pin knocked over!");
             }
-
-
         }
     }
 
+    public void ResetPin()
+    {
+        transform.position = originalPosition;
+        transform.rotation = originalRotation;
+        isKnockedOver = false;
+        GetComponent<Rigidbody>().velocity = Vector3.zero;
+        GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
+    }
 }
