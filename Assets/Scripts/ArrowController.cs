@@ -45,8 +45,8 @@ public class ArrowController : MonoBehaviour
             else
             {
                 transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y, 0.1f);
+            }
         }
-    }
     }
     public float Angle
     {

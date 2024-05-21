@@ -5,11 +5,14 @@ public class Ball : MonoBehaviour
     public Rigidbody rb;
     public float startSpeed = 40f;
     private Transform _arrow;
+    private Vector3 initialPosition;  // To store the initial position of the ball
 
     void Start()
     {
         _arrow = GameObject.FindGameObjectWithTag("Arrow").transform;
         rb = GetComponent<Rigidbody>();
+        initialPosition = transform.position;  // Store the initial position at game start
+        Debug.Log("Initial Position Stored: " + initialPosition);
     }
 
     void Update()
@@ -31,5 +34,15 @@ public class Ball : MonoBehaviour
     private void CheckPins()
     {
         GameManager.Instance.PlayerFinishedTurn();
+    }
+
+    public void ResetPosition()
+    {
+        Debug.Log("Resetting Position to: " + initialPosition);
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;  // Stop the ball's physics simulation temporarily
+        transform.position = initialPosition;  // Reset to the initial position
+        rb.isKinematic = false;  // Re-enable physics if necessary
     }
 }
