@@ -6,18 +6,13 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
     public int currentRound = 1;
     public int currentPlayer = 1;
-    public int[] scores = new int[2];
-
-    //account for 10 frames per player
-    public int[] scores1 = new int[10];
-    public int[] scores2 = new int[10];
-    int testScore = 0;
-    public int currFrame = 1;
-
-    public string scoreDisplay1 = "P1 | ";
-    public string scoreDisplay2 = "P2 | ";
-    public TextMeshProUGUI scoreText;  // Reference to the scoring text UI element
+    public int[,] scores = new int[2, 2]; // Adjusted for 2 rounds and 2 players
+    public int currActions = 0;
+    public TextMeshProUGUI scoreText;  // Reference to the combined scoring text UI element (if still needed)
     public TextMeshProUGUI feedbackText;  // Reference to the feedback UI element
+    public TextMeshProUGUI roundText;  // Reference to the round text UI element
+    public TextMeshProUGUI player1ScoreText;  // Reference to the Player 1 score text UI element
+    public TextMeshProUGUI player2ScoreText;  // Reference to the Player 2 score text UI element
     public Ball ball;  // Reference to the Ball script
     public Pin[] pins;  // Array of Pin objects
 
@@ -35,6 +30,9 @@ public class GameManager : MonoBehaviour
 
         scoreText = FindComponentByTag<TextMeshProUGUI>("ScoreText");
         feedbackText = FindComponentByTag<TextMeshProUGUI>("Feedback");
+        roundText = FindComponentByTag<TextMeshProUGUI>("RoundText");
+        player1ScoreText = FindComponentByTag<TextMeshProUGUI>("Player1");
+        player2ScoreText = FindComponentByTag<TextMeshProUGUI>("Player2");
     }
 
     void Start()
@@ -56,7 +54,10 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("Pins not found!");
             }
         }
-        InitializeScore();
+
+        UpdateFeedback($"Player {currentPlayer}'s turn.");
+        UpdateRoundText();
+        UpdateScoreText();
     }
 
     private T FindComponentByTag<T>(string tag) where T : Component
@@ -80,50 +81,15 @@ public class GameManager : MonoBehaviour
         }
         return null;
     }
-    public void InitializeScore()
-    {
-        for(int i = 0; i < scores1.Length; i++)
-        {
-            scores1[i] = 0;
-            scores2[i] = 0;
-        }
-    }
+
     public void UpdateScore(int points)
     {
-        // int prevFrame = currFrame;
-        
-        // if(currentPlayer == 1)
-        // {
-        //     testScore += points;
-        //     if (scoreText != null)
-        //     {
-        //         scoreDisplay1 = $"{testScore} | ";
-        //         scoreDisplay2 = $"{0} | ";
-        //     }
-        //     currentPlayer = 2;
-        // }
-        // else if(currentPlayer == 2)
-        // {
-        //     testScore += points;
-        //     currFrame += 1;
-        //     if (scoreText != null)
-        //     {
-        //         scoreDisplay2 = $"{testScore} | ";
-        //         scoreDisplay1 = $"{0} | ";
-        //     }
-        //     currentPlayer = 1;
-        // }
-        // if (scoreText != null)
-        // {
-        //     scoreText.text = scoreDisplay1 + "\n" + scoreDisplay2;
-        // }
-        
-
-        scores[currentPlayer - 1] += points;
-        // if (scoreText != null)
-        // {
-        //     scoreText.text = $"Player 1: {scores[0]} | Player 2: {scores[1]}";
-        // }
+        if (currentRound <= 2) // Ensure the round is within bounds
+        {
+            scores[currentPlayer - 1, currentRound - 1] += points;
+            UpdateScoreText();
+            UpdateFeedback($"Player {currentPlayer}'s turn.");
+        }
     }
 
     public void UpdateFeedback(string message)
@@ -134,51 +100,69 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void testUpdate()
+    public void UpdateRoundText()
     {
-        if(currentPlayer == 1)
+        if (roundText != null)
         {
-            if (scoreText != null)
-            {
-                scoreDisplay1 = $"{scores[0]} | ";
-                scoreDisplay2 = $"{0} | ";
-            }
-            currentPlayer = 2;
+            roundText.text = $"Round: {currentRound}";
         }
-        else if(currentPlayer == 2)
+    }
+
+    public void UpdateScoreText()
+    {
+        if (player1ScoreText != null)
         {
-            currFrame += 1;
-            if (scoreText != null)
-            {
-                scoreDisplay2 = $"{scores[1]} | ";
-                scoreDisplay1 = $"{0} | ";
-            }
-            currentPlayer = 1;
+            player1ScoreText.text = BuildScoreString(0);
+        }
+        if (player2ScoreText != null)
+        {
+            player2ScoreText.text = BuildScoreString(1);
         }
         if (scoreText != null)
         {
-            scoreText.text = scoreDisplay1 + "\n" + scoreDisplay2;
+            scoreText.text = $"Player 1: {GetTotalScore(0)} | Player 2: {GetTotalScore(1)}";
         }
     }
+
+    private string BuildScoreString(int playerIndex)
+    {
+        string scoreString = "";
+        for (int round = 0; round < 2; round++) // Fixed to loop through all rounds
+        {
+            if (round > 0)
+            {
+                scoreString += " | ";
+            }
+            scoreString += $"{scores[playerIndex, round]}";
+        }
+        return scoreString;
+    }
+
+    private int GetTotalScore(int playerIndex)
+    {
+        int totalScore = 0;
+        for (int round = 0; round < 2; round++)
+        {
+            totalScore += scores[playerIndex, round];
+        }
+        return totalScore;
+    }
+
     public void PlayerFinishedTurn()
     {
-        // if(currFrame > 10)
-        // {
-        //     //currFrame is incremented in the updateScores function
-        //     EndGame();
-        //     return;
-        // }
         currentPlayer = currentPlayer == 1 ? 2 : 1;
         if (currentPlayer == 1)
         {
             currentRound++;
-            if (currentRound > 10)
+            if (currentRound > 2) // Adjusted to only run for 2 rounds
             {
                 EndGame();
                 return;
             }
         }
-        testUpdate();
+        UpdateFeedback($"Player {currentPlayer}'s turn.");
+        UpdateRoundText();
+        
         ResetGameComponents();
     }
 
@@ -215,9 +199,31 @@ public class GameManager : MonoBehaviour
 
     private void EndGame()
     {
+        int totalScorePlayer1 = GetTotalScore(0);
+        int totalScorePlayer2 = GetTotalScore(1);
+
+        string winner;
+        if (totalScorePlayer1 > totalScorePlayer2)
+        {
+            winner = "Player 1 wins!";
+        }
+        else if (totalScorePlayer2 > totalScorePlayer1)
+        {
+            winner = "Player 2 wins!";
+        }
+        else
+        {
+            winner = "It's a tie!";
+        }
+
         if (feedbackText != null)
         {
             feedbackText.text += "\nGame Over!";
+        }
+
+        if (roundText != null)
+        {
+            roundText.text = winner;
         }
     }
 }
