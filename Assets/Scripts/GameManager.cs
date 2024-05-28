@@ -7,6 +7,15 @@ public class GameManager : MonoBehaviour
     public int currentRound = 1;
     public int currentPlayer = 1;
     public int[] scores = new int[2];
+
+    //account for 10 frames per player
+    public int[] scores1 = new int[10];
+    public int[] scores2 = new int[10];
+    int testScore = 0;
+    public int currFrame = 1;
+
+    public string scoreDisplay1 = "P1 | ";
+    public string scoreDisplay2 = "P2 | ";
     public TextMeshProUGUI scoreText;  // Reference to the scoring text UI element
     public TextMeshProUGUI feedbackText;  // Reference to the feedback UI element
     public Ball ball;  // Reference to the Ball script
@@ -47,6 +56,7 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("Pins not found!");
             }
         }
+        InitializeScore();
     }
 
     private T FindComponentByTag<T>(string tag) where T : Component
@@ -70,14 +80,50 @@ public class GameManager : MonoBehaviour
         }
         return null;
     }
-
+    public void InitializeScore()
+    {
+        for(int i = 0; i < scores1.Length; i++)
+        {
+            scores1[i] = 0;
+            scores2[i] = 0;
+        }
+    }
     public void UpdateScore(int points)
     {
+        // int prevFrame = currFrame;
+        
+        // if(currentPlayer == 1)
+        // {
+        //     testScore += points;
+        //     if (scoreText != null)
+        //     {
+        //         scoreDisplay1 = $"{testScore} | ";
+        //         scoreDisplay2 = $"{0} | ";
+        //     }
+        //     currentPlayer = 2;
+        // }
+        // else if(currentPlayer == 2)
+        // {
+        //     testScore += points;
+        //     currFrame += 1;
+        //     if (scoreText != null)
+        //     {
+        //         scoreDisplay2 = $"{testScore} | ";
+        //         scoreDisplay1 = $"{0} | ";
+        //     }
+        //     currentPlayer = 1;
+        // }
+        // if (scoreText != null)
+        // {
+        //     scoreText.text = scoreDisplay1 + "\n" + scoreDisplay2;
+        // }
+        
+
         scores[currentPlayer - 1] += points;
-        if (scoreText != null)
-        {
-            scoreText.text = $"Player 1: {scores[0]} | Player 2: {scores[1]}";
-        }
+        // if (scoreText != null)
+        // {
+        //     scoreText.text = $"Player 1: {scores[0]} | Player 2: {scores[1]}";
+        // }
     }
 
     public void UpdateFeedback(string message)
@@ -88,8 +134,40 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void testUpdate()
+    {
+        if(currentPlayer == 1)
+        {
+            if (scoreText != null)
+            {
+                scoreDisplay1 = $"{scores[0]} | ";
+                scoreDisplay2 = $"{0} | ";
+            }
+            currentPlayer = 2;
+        }
+        else if(currentPlayer == 2)
+        {
+            currFrame += 1;
+            if (scoreText != null)
+            {
+                scoreDisplay2 = $"{scores[1]} | ";
+                scoreDisplay1 = $"{0} | ";
+            }
+            currentPlayer = 1;
+        }
+        if (scoreText != null)
+        {
+            scoreText.text = scoreDisplay1 + "\n" + scoreDisplay2;
+        }
+    }
     public void PlayerFinishedTurn()
     {
+        // if(currFrame > 10)
+        // {
+        //     //currFrame is incremented in the updateScores function
+        //     EndGame();
+        //     return;
+        // }
         currentPlayer = currentPlayer == 1 ? 2 : 1;
         if (currentPlayer == 1)
         {
@@ -100,6 +178,7 @@ public class GameManager : MonoBehaviour
                 return;
             }
         }
+        testUpdate();
         ResetGameComponents();
     }
 
