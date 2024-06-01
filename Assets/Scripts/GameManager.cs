@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     public int currentRound = 1;
     public int currentPlayer = 1;
     public int[,] scores = new int[2, 2]; // Adjusted for 2 rounds and 2 players
-    public int currActions = 0;
+    public int currTries = 1;
     public TextMeshProUGUI scoreText;  // Reference to the combined scoring text UI element (if still needed)
     public TextMeshProUGUI feedbackText;  // Reference to the feedback UI element
     public TextMeshProUGUI roundText;  // Reference to the round text UI element
@@ -90,6 +90,14 @@ public class GameManager : MonoBehaviour
             UpdateScoreText();
             UpdateFeedback($"Player {currentPlayer}'s turn.");
         }
+        if(scores[currentPlayer - 1, currentRound - 1] == 10)
+        {
+            currTries = 2;
+        }
+        else
+        {
+            currTries += 1;
+        }
     }
 
     public void UpdateFeedback(string message)
@@ -150,22 +158,42 @@ public class GameManager : MonoBehaviour
 
     public void PlayerFinishedTurn()
     {
-        currentPlayer = currentPlayer == 1 ? 2 : 1;
-        if (currentPlayer == 1)
+        if(currTries > 1 | scores[currentPlayer-1, currentRound-1] == 10)
         {
-            currentRound++;
-            if (currentRound > 2) // Adjusted to only run for 2 rounds
+            currentPlayer = currentPlayer == 1 ? 2 : 1;
+            if (currentPlayer == 1)
             {
-                EndGame();
-                return;
+                currentRound++;
+                if (currentRound > 2) // Adjusted to only run for 2 rounds
+                {
+                    EndGame();
+                    return;
+                }
             }
+            UpdateFeedback($"Player {currentPlayer}'s turn.");
+            UpdateRoundText();
+            ResetGameComponents();
         }
-        UpdateFeedback($"Player {currentPlayer}'s turn.");
-        UpdateRoundText();
-        
-        ResetGameComponents();
+        else
+        {
+            UpdateFeedback($"Player {currentPlayer}'s turn.");
+            UpdateRoundText();
+            ContinueGame();
+            
+        }
     }
 
+    private void ContinueGame()
+    {
+        if (ball != null)
+        {
+            ball.ResetPosition();
+        }
+        else
+        {
+            Debug.LogError("Ball reference is null in ResetGameComponents!");
+        }
+    }
     private void ResetGameComponents()
     {
         if (ball != null)
@@ -197,6 +225,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    
     private void EndGame()
     {
         int totalScorePlayer1 = GetTotalScore(0);

@@ -38,7 +38,7 @@ public class Ball : MonoBehaviour
 
     public void ResetPosition()
     {
-        Debug.Log("Resetting Position to: " + initialPosition);
+        Debug.Log("Resetting pin Position to: " + initialPosition);
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         rb.isKinematic = true;  // Stop the ball's physics simulation temporarily

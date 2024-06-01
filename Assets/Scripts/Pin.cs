@@ -20,7 +20,6 @@ public class Pin : MonoBehaviour
             {
                 isKnockedOver = true;
                 GameManager.Instance.UpdateScore(1);  // Update the score using the GameManager
-                GameManager.Instance.UpdateFeedback("Pin knocked over!");
             }
         }
     }
