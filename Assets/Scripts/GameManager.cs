@@ -90,7 +90,7 @@ public class GameManager : MonoBehaviour
             UpdateScoreText();
             UpdateFeedback($"Player {currentPlayer}'s turn.");
         }
-        if(scores[currentPlayer - 1, currentRound - 1] == 10)
+        if (scores[currentPlayer - 1, currentRound - 1] == 10)
         {
             currTries = 2;
         }
@@ -158,7 +158,7 @@ public class GameManager : MonoBehaviour
 
     public void PlayerFinishedTurn()
     {
-        if(currTries > 1 | scores[currentPlayer-1, currentRound-1] == 10)
+        if (currTries > 1 || scores[currentPlayer - 1, currentRound - 1] == 10)
         {
             currentPlayer = currentPlayer == 1 ? 2 : 1;
             if (currentPlayer == 1)
@@ -168,6 +168,10 @@ public class GameManager : MonoBehaviour
                 {
                     EndGame();
                     return;
+                }
+                else
+                {
+                    StartNewRound();
                 }
             }
             UpdateFeedback($"Player {currentPlayer}'s turn.");
@@ -179,7 +183,6 @@ public class GameManager : MonoBehaviour
             UpdateFeedback($"Player {currentPlayer}'s turn.");
             UpdateRoundText();
             ContinueGame();
-            
         }
     }
 
@@ -194,11 +197,18 @@ public class GameManager : MonoBehaviour
             Debug.LogError("Ball reference is null in ResetGameComponents!");
         }
     }
+
     private void ResetGameComponents()
     {
         if (ball != null)
         {
             ball.ResetPosition();
+            // Enable the ball collider
+            Collider ballCollider = ball.GetComponent<Collider>();
+            if (ballCollider != null)
+            {
+                ballCollider.enabled = true;
+            }
         }
         else
         {
@@ -212,6 +222,12 @@ public class GameManager : MonoBehaviour
                 if (pin != null)
                 {
                     pin.ResetPin();
+                    // Enable the pin collider
+                    Collider pinCollider = pin.GetComponent<Collider>();
+                    if (pinCollider != null)
+                    {
+                        pinCollider.enabled = true;
+                    }
                 }
                 else
                 {
@@ -225,8 +241,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void StartNewRound()
+    {
+        // Enable colliders for ball and pins
+        ResetGameComponents();
+    }
 
-    
     private void EndGame()
     {
         int totalScorePlayer1 = GetTotalScore(0);
