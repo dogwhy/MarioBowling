@@ -39,6 +39,14 @@ public class PoseReceiver : MonoBehaviour
             // Continue listening for data
             while (true)
             {
+                if (!client.Connected)
+                {
+                    Debug.Log("Client disconnected. Waiting for new connection...");
+                    client = server.AcceptTcpClient();
+                    Debug.Log("Client reconnected.");
+                    stream = client.GetStream();
+                }
+
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
                 if (bytesRead == 0) continue;
 
@@ -50,14 +58,28 @@ public class PoseReceiver : MonoBehaviour
                     string[] dataLines = dataBuffer.ToString().Split('\n');
                     string completeData = dataLines[0].Trim();
 
-                    if (float.TryParse(completeData, out float angle))
+                    string[] parts = completeData.Split(',');
+                    if (parts.Length == 2 &&
+                        float.TryParse(parts[0], out float angle) &&
+                        float.TryParse(parts[1], out float acceleration))
                     {
-                        Debug.Log("Received angle: " + angle);
-                        ArrowController.Instance.Angle = angle;
+                        Debug.Log($"Received acceleration: {acceleration}, angle: {angle}");
+                        GameManager.Instance.Enqueue(() =>
+                        {
+                            if (ArrowController.Instance != null)
+                            {
+                                ArrowController.Instance.Acceleration = acceleration;
+                                ArrowController.Instance.Angle = angle;
+                            }
+                            else
+                            {
+                                Debug.LogError("ArrowController.Instance is not set.");
+                            }
+                        });
                     }
                     else
                     {
-                        Debug.LogError("Failed to parse angle: " + completeData);
+                        Debug.LogError("Failed to parse acceleration and angle: " + completeData);
                     }
 
                     dataBuffer.Remove(0, completeData.Length + 1);

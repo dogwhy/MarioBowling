@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Concurrent;
 using UnityEngine;
 using TMPro;
 
@@ -15,6 +17,8 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI player2ScoreText;  // Reference to the Player 2 score text UI element
     public Ball ball;  // Reference to the Ball script
     public Pin[] pins;  // Array of Pin objects
+
+    private readonly ConcurrentQueue<Action> actionQueue = new ConcurrentQueue<Action>();
 
     void Awake()
     {
@@ -58,6 +62,19 @@ public class GameManager : MonoBehaviour
         UpdateFeedback($"Player {currentPlayer}'s turn.");
         UpdateRoundText();
         UpdateScoreText();
+    }
+
+    void Update()
+    {
+        while (actionQueue.TryDequeue(out var action))
+        {
+            action?.Invoke();
+        }
+    }
+
+    public void Enqueue(Action action)
+    {
+        actionQueue.Enqueue(action);
     }
 
     private T FindComponentByTag<T>(string tag) where T : Component

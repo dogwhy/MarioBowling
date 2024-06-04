@@ -2,10 +2,24 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
+    public static Ball Instance; // Singleton instance
     public Rigidbody rb;
     public float startSpeed = 40f;
     private Transform _arrow;
     private Vector3 initialPosition;  // To store the initial position of the ball
+
+    void Awake()
+    {
+        // Ensure only one instance exists
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     void Start()
     {

@@ -4,7 +4,7 @@ import numpy as np
 import math
 import socket
 import time
-
+import paho.mqtt.client as mqtt
 
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -12,18 +12,45 @@ mp_drawing = mp.solutions.drawing_utils
 
 cap = cv2.VideoCapture(0)
 
-
+#websocket server info
 server_ip = "127.0.0.1"
 server_port = 8080
 
+# MQTT broker information
+broker = "mqtt.eclipseprojects.io"
+port = 1883
+topic = "180da/mario"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 one_count = ""
+acceleration = None
 
-def send_angle(angle):
+# Callback when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc):
+    print(f"Connected with result code {rc}")
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe(topic)
+
+# Callback when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    global acceleration
+    acceleration = msg.payload.decode()
+    # print(f"{msg.topic} {acceleration}")
+
+
+# Create an MQTT client and attach our routines to it.
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(broker, port, 60)
+
+#runs MQTT loop in a separate thread -> this means it wont break the code
+client.loop_start()
+
+def send_acc_angle(acceleration, angle):
     try:
-        message = f"{angle}\n".encode()
+        message = f"{acceleration},{angle}\n".encode()
         client_socket.sendall(message)
     except Exception as e:
         print("Error sending angle:", e)
@@ -77,36 +104,17 @@ def print_arm_direction(angle):
 
 
 def map_angle(angle):
-   threshold = {
-       (-20, 20): "0",
-       (20, 40): "20",
-       (40, 60): "40",
-       (60, 75): "60",
-       (75, 105): "90",
-       # (105, 135): "120",
-       # (135, 165): "150",
-       # (165, 180): "180",
-       (-40, -20): "-20",
-       (-60, -40): "-40",
-       (-75, -60): "-60",
-       (-105, -75): "-90",
-       # (-135, -105): "-120",
-       # (-165, -135): "-150",
-       # (-180, -165): "-180"
-   }
-   
-
-
-
-
-   for range_, label in threshold.items():
-       start, end = range_
-       if start <= angle <= end:
-           return int(label)
-   return int(180)
+    if angle < -90:
+        return (angle + 180)
+    elif angle > 90:
+        return (angle - 180)
+    else:
+        return angle
       
 def main():
+   global acceleration
    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+       #connects to websocket
        connect_to_server()
 
 
@@ -151,29 +159,28 @@ def main():
                    # Print angle
                    cv2.putText(image, f"Angle: {angle:.2f} degrees", (30, 100),
                                cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-                   # cv2.line(image, shoulder, wrist, (0, 255, 0), 2)
-
-
-                   # angle_radian = math.atan2(wrist[1] - shoulder[1], wrist[0] - shoulder[0])
-                   # angle_degree = math.degrees(angle_radian)
-
-
-                   # cv2.putText(image, f"Angle: {angle_degree:.2f}", (shoulder[0] + 50, shoulder[1] - 20),
-                   #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA)
-
-
-                   
 
                    #this make sure that initial position goes from start to final position of ideal swing
                    if arm_direction.lower() == "down":
                        one_count = "down"
 
+                   if acceleration is not None:
+                           print("Angle: ", angle)
+                           print("Acceleration: ", acceleration)
+                           send_acc_angle(angle, acceleration)
+                           acceleration = None
+                    
+
 
                    #once valid swing is detected send signal: last angle
-                   if arm_direction.lower() == "up" and one_count == "down":
-                       time.sleep(0.5)
-                       send_angle(angle)
-                       one_count = "up"
+                #    if acceleration is not None:
+                #        if arm_direction.lower() == "up" and one_count == "down":
+                #            print("Angle: ", angle)
+                #            print("Acceleration: ", acceleration)
+                #     #    sends angle to server
+                #     #    send_angle(angle)
+                #            one_count = "up"
+
 
                   
            except Exception as e:
@@ -193,6 +200,8 @@ if __name__ == "__main__":
    except KeyboardInterrupt:
        pass
    finally:
+    #    disconnectes from websocket
        client_socket.close()
        cap.release()
        cv2.destroyAllWindows()
+       client.loop_stop()
