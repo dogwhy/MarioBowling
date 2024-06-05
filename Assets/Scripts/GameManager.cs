@@ -1,14 +1,16 @@
-using System;
-using System.Collections.Concurrent;
 using UnityEngine;
 using TMPro;
+using System;
+using System.Collections.Concurrent;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
+
     public int currentRound = 1;
     public int currentPlayer = 1;
-    public int[,] scores = new int[2, 2]; // Adjusted for 2 rounds and 2 players
+    public int[,] scores = new int[2, 5]; // Adjusted for 5 rounds and 2 players
     public int currTries = 1;
     public TextMeshProUGUI scoreText;  // Reference to the combined scoring text UI element (if still needed)
     public TextMeshProUGUI feedbackText;  // Reference to the feedback UI element
@@ -17,6 +19,13 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI player2ScoreText;  // Reference to the Player 2 score text UI element
     public Ball ball;  // Reference to the Ball script
     public Pin[] pins;  // Array of Pin objects
+
+    public GameObject bulletBillPrefab; // Bullet Bill prefab
+    public GameObject bananaPrefab; // Banana prefab
+    public GameObject shellPrefab; // Shell prefab
+    public GameObject mushroomPrefab; // Mushroom prefab
+
+    public Transform laneTransform; // The transform representing the bowling lane
 
     private readonly ConcurrentQueue<Action> actionQueue = new ConcurrentQueue<Action>();
 
@@ -101,7 +110,7 @@ public class GameManager : MonoBehaviour
 
     public void UpdateScore(int points)
     {
-        if (currentRound <= 2) // Ensure the round is within bounds
+        if (currentRound <= 5) // Ensure the round is within bounds
         {
             scores[currentPlayer - 1, currentRound - 1] += points;
             UpdateScoreText();
@@ -152,7 +161,7 @@ public class GameManager : MonoBehaviour
     private string BuildScoreString(int playerIndex)
     {
         string scoreString = "";
-        for (int round = 0; round < 2; round++) // Fixed to loop through all rounds
+        for (int round = 0; round < 5; round++) // Loop through all 5 rounds
         {
             if (round > 0)
             {
@@ -166,7 +175,7 @@ public class GameManager : MonoBehaviour
     private int GetTotalScore(int playerIndex)
     {
         int totalScore = 0;
-        for (int round = 0; round < 2; round++)
+        for (int round = 0; round < 5; round++) // Loop through all 5 rounds
         {
             totalScore += scores[playerIndex, round];
         }
@@ -181,7 +190,7 @@ public class GameManager : MonoBehaviour
             if (currentPlayer == 1)
             {
                 currentRound++;
-                if (currentRound > 2) // Adjusted to only run for 2 rounds
+                if (currentRound > 5) // Adjusted to only run for 5 rounds
                 {
                     EndGame();
                     return;
@@ -200,6 +209,12 @@ public class GameManager : MonoBehaviour
             UpdateFeedback($"Player {currentPlayer}'s turn.");
             UpdateRoundText();
             ContinueGame();
+        }
+
+        // Place power-ups randomly during the game
+        if (UnityEngine.Random.value <= 0.5f)
+        {
+            PlaceRandomPowerUp();
         }
     }
 
@@ -220,6 +235,7 @@ public class GameManager : MonoBehaviour
         if (ball != null)
         {
             ball.ResetPosition();
+            ball.ResetSize(); // Reset the ball size
             // Enable the ball collider
             Collider ballCollider = ball.GetComponent<Collider>();
             if (ballCollider != null)
@@ -292,5 +308,68 @@ public class GameManager : MonoBehaviour
         {
             roundText.text = winner;
         }
+    }
+
+    // Power-Up Placement Methods
+
+    private void PlaceBulletBill()
+    {
+        Vector3 position = new Vector3(0, 2, -laneTransform.localScale.z / 2); // Starting at the beginning of the lane
+        GameObject bulletBill = Instantiate(bulletBillPrefab, position, Quaternion.identity);
+        bulletBill.GetComponent<BulletBill>().OnHitEndOfLane += () => StartCoroutine(EndTurnAfterDelay());
+        Debug.Log("Placed Bullet Bill");
+    }
+
+    private void PlaceBanana()
+    {
+        Vector3 position = new Vector3(UnityEngine.Random.Range(-laneTransform.localScale.x / 2, laneTransform.localScale.x / 2), 0.1f, UnityEngine.Random.Range(0, laneTransform.localScale.z));
+        Instantiate(bananaPrefab, position, Quaternion.identity);
+        Debug.Log("Placed Banana");
+    }
+
+    private void PlaceShell()
+    {
+        Vector3 position = new Vector3(UnityEngine.Random.Range(-laneTransform.localScale.x / 2, laneTransform.localScale.x / 2), 0.1f, UnityEngine.Random.Range(0, laneTransform.localScale.z));
+        Instantiate(shellPrefab, position, Quaternion.identity);
+        Debug.Log("Placed Shell");
+    }
+
+    private void DropMushroom()
+    {
+        Vector3 position = new Vector3(ball.transform.position.x, ball.transform.position.y + 5, ball.transform.position.z);
+        Instantiate(mushroomPrefab, position, Quaternion.identity);
+        Debug.Log("Dropped Mushroom");
+    }
+
+    private void PlaceRandomPowerUp()
+    {
+        int randomPowerUp = UnityEngine.Random.Range(0, 4);
+        switch (randomPowerUp)
+        {
+            case 0:
+                PlaceBulletBill();
+                break;
+            case 1:
+                PlaceBanana();
+                break;
+            case 2:
+                PlaceShell();
+                break;
+            case 3:
+                DropMushroom();
+                break;
+        }
+    }
+
+    private IEnumerator EndTurnAfterDelay()
+    {
+        yield return new WaitForSeconds(5);
+        EndTurnImmediately();
+    }
+
+    private void EndTurnImmediately()
+    {
+        currTries = 2; // Ensures the turn ends immediately
+        PlayerFinishedTurn();
     }
 }

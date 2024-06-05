@@ -2,30 +2,18 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
-    public static Ball Instance; // Singleton instance
     public Rigidbody rb;
     public float startSpeed = 40f;
     private Transform _arrow;
     private Vector3 initialPosition;  // To store the initial position of the ball
-
-    void Awake()
-    {
-        // Ensure only one instance exists
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
+    private Vector3 originalScale; // To store the original scale of the ball
 
     void Start()
     {
         _arrow = GameObject.FindGameObjectWithTag("Arrow").transform;
         rb = GetComponent<Rigidbody>();
         initialPosition = transform.position;  // Store the initial position at game start
+        originalScale = transform.localScale; // Store the original scale at game start
         Debug.Log("Initial Position Stored: " + initialPosition);
     }
 
@@ -58,5 +46,10 @@ public class Ball : MonoBehaviour
         rb.isKinematic = true;  // Stop the ball's physics simulation temporarily
         transform.position = initialPosition;  // Reset to the initial position
         rb.isKinematic = false;  // Re-enable physics if necessary
+    }
+
+    public void ResetSize()
+    {
+        transform.localScale = originalScale; // Reset the ball size to its original scale
     }
 }
